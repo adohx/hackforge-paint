@@ -1,0 +1,69 @@
+name: Build Ubuntu cmake
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout project
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libsdl3-dev
+
+      - name: Configure cmake
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+      
+      - name: Prepare simple runtime
+        run: |
+          mkdir -p dist
+          
+          cp build/hackforge-paint dist/
+          chmod +x dist/hackforge-paint
+
+          SDL3_PATH=$(ldd build/hackforge-paint | grep "libSDL3" | awk '{print $3}')
+          echo "SDL3_PATH=$SDL3_PATH"
+          if [ -n "$SDL3_PATH" ] && [ -f "$SDL3_PATH" ];then
+            cp "$SDL3_PATH" dist/
+          fi
+
+          cat > dist/run.sh << 'EOF'
+           #!/usr/bin/env bash
+          set -e
+          cd "$(dirname "$0")"
+          export LD_LIBRARY_PATH="$PWD:$LD_LIBRARY_PATH"
+          ./hackforge-paint
+          EOF
+
+          chmod +x dist/run.sh
+      
+      - name: Check runtime dependencies
+        run: |
+          ldd dist/hackforge-paint
+          ! ldd dist/hackforge-paint | grep "not found"
+
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: hackforge-paint-ubuntu-simple
+          path: |
+            dist/
+     
+    
