@@ -40,13 +40,7 @@ jobs:
             libudev-dev \
             libibus-1.0-dev \
             libdbus-1-dev
-
-      - name: Configure cmake
-        run: |
-          cmake -S . -B build \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release
-
+            
       - name: Checkout SDL3
         uses: actions/checkout@v4
         with:
@@ -85,6 +79,12 @@ jobs:
           echo "ldconfig cache:"
           ldconfig -p | grep SDL3 || true
           
+      - name: Configure cmake
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+            
       - name: Build
         run: cmake --build build
       
