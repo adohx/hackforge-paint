@@ -7,25 +7,72 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
 
+    env:
+      SDL3_VERSION: release-3.4.10
+
     steps:
       - name: checkout project
         uses: actions/checkout@v4
 
       - name: Install system dependencies
         run: |
-          sudo apt update
-          sudo apt install -y \
+          sudo apt-get update
+          sudo apt-get install -y \
             build-essential \
             cmake \
             ninja-build \
             pkg-config \
-            libsdl3-dev
+            git \
+            libx11-dev \
+            libxext-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxss-dev \
+            libxtst-dev \
+            libxkbcommon-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libudev-dev \
+            libibus-1.0-dev \
+            libdbus-1-dev
 
       - name: Configure cmake
         run: |
           cmake -S . -B build \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release
+
+      - name: Checkout SDL3
+        uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          path: third_party/SDL
+          ref: ${{ env.SDL3_VERSION }}
+
+      - name: Cache SDL3
+        id: cache-sdl3
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/SDL/install
+          key: sdl3-${{ runner.os }}-${{ env.SDL3_VERSION }}
+
+      - name: Build and install SDL3 to the system path
+        run: |
+          cmake -S third_party/SDL -B third_party/SDL/build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DSDL_TEST_LIBRARY=OFF
+
+          cmake --build third_party/SDL/build
+          sudo cmake --install third_party/SDL/build
+          sudo ldconfig
 
       - name: Build
         run: cmake --build build
