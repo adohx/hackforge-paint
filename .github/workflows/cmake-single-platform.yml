@@ -106,6 +106,12 @@ jobs:
             cp "$SDL3_PATH" dist/
           fi
 
+          DBUS_PATH=$(ldd build/hackforge-paint | grep "libdbus-1" | awk '{print $3}')
+          echo "DBUS_PATH=$DBUS_PATH"
+          if [ -n "$DBUS_PATH" ] && [ -f "$DBUS_PATH" ];then
+            cp "$DBUS_PATH" dist/
+          fi
+
           cat > dist/run.sh << 'EOF'
            #!/usr/bin/env bash
           set -e
